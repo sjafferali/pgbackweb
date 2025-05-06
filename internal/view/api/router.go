@@ -18,5 +18,11 @@ func MountRouter(
 	h := &handlers{
 		servs: servs,
 	}
+
+	// Public endpoints
 	v1.GET("/health", h.healthHandler)
+
+	// Protected endpoints
+	protected := v1.Group("", APIKeyAuth())
+	protected.POST("/databases", h.createDatabaseAPI)
 }
