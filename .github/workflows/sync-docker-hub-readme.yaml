@@ -19,6 +19,6 @@ jobs:
         uses: ms-jpq/sync-dockerhub-readme@v1
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
-          password: ${{ secrets.DOCKERHUB_PASS }}
-          repository: eduardolat/pgbackweb
+          password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN }}
+          repository: sjafferali/pgbackweb
           readme: "./README.md"
