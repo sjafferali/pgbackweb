@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/eduardolat/pgbackweb/internal/service"
+	"github.com/eduardolat/pgbackweb/internal/view/api/executions"
 	"github.com/eduardolat/pgbackweb/internal/view/api/restorations"
 	"github.com/eduardolat/pgbackweb/internal/view/middleware"
 	"github.com/labstack/echo/v4"
@@ -39,6 +40,10 @@ func MountRouter(
 	// Restoration endpoints
 	restorationsGroup := protected.Group("/restorations")
 	restorations.MountRouter(restorationsGroup, servs)
+
+	// Executions endpoints
+	executionsGroup := protected.Group("/executions")
+	executions.MountRouter(executionsGroup, servs)
 
 	// Mount Swagger UI (public access)
 	RegisterSwaggerUI(parent)
