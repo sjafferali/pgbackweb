@@ -25,5 +25,7 @@ func MountRouter(
 	// Protected endpoints
 	protected := v1.Group("", APIKeyAuth())
 	protected.POST("/databases", h.createDatabaseAPI)
+	protected.GET("/databases", h.listDatabasesAPI)
+	protected.GET("/databases/:id", h.getDatabaseAPI)
 	protected.DELETE("/databases/:id", h.deleteDatabaseAPI)
 }
