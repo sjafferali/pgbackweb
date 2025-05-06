@@ -24,9 +24,24 @@ type BackupsServiceInterface interface {
 	DeleteBackup(ctx context.Context, id uuid.UUID) error
 }
 
+// ExecutionsServiceInterface defines the interface for the ExecutionsService
+type ExecutionsServiceInterface interface {
+	RunExecution(ctx context.Context, backupID uuid.UUID) error
+}
+
 // MockBackupsService is a mock implementation of the BackupsServiceInterface
 type MockBackupsService struct {
 	mock.Mock
+}
+
+// MockExecutionsService is a mock implementation of the ExecutionsServiceInterface
+type MockExecutionsService struct {
+	mock.Mock
+}
+
+func (m *MockExecutionsService) RunExecution(ctx context.Context, backupID uuid.UUID) error {
+	args := m.Called(ctx, backupID)
+	return args.Error(0)
 }
 
 func (m *MockBackupsService) GetAllBackups(ctx context.Context) ([]dbgen.Backup, error) {
@@ -56,7 +71,8 @@ type mockHandlers struct {
 
 // mockBackupService is a test version of service.Service that accepts interfaces
 type mockBackupService struct {
-	BackupsService BackupsServiceInterface
+	BackupsService    BackupsServiceInterface
+	ExecutionsService ExecutionsServiceInterface
 }
 
 // listBackupsHandler is a copy of the original handler but using our mock types
@@ -142,6 +158,32 @@ func (h *mockHandlers) createBackupHandler(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusCreated, backup)
+}
+
+// triggerBackupHandler is a copy of the original handler but using our mock types
+func (h *mockHandlers) triggerBackupHandler(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	// Get backup ID from URL parameter
+	backupIDStr := c.Param("id")
+	backupID, err := uuid.Parse(backupIDStr)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "Invalid backup ID",
+		})
+	}
+
+	// Trigger the backup
+	err = h.servs.ExecutionsService.RunExecution(ctx, backupID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to trigger backup: " + err.Error(),
+		})
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{
+		"message": "Backup task triggered successfully",
+	})
 }
 
 func TestListBackupsHandler(t *testing.T) {
@@ -664,4 +706,89 @@ func TestCreateBackupHandler_Error(t *testing.T) {
 	assert.Equal(t, "Failed to create backup: "+assert.AnError.Error(), response["error"])
 
 	mockService.AssertExpectations(t)
+}
+
+func TestTriggerBackupHandler(t *testing.T) {
+	// Setup
+	e := echo.New()
+	mockBackupsService := new(MockBackupsService)
+	mockExecutionsService := new(MockExecutionsService)
+	h := &mockHandlers{
+		servs: &mockBackupService{
+			BackupsService:    mockBackupsService,
+			ExecutionsService: mockExecutionsService,
+		},
+	}
+
+	// Test cases
+	tests := []struct {
+		name           string
+		backupID       string
+		mockSetup      func()
+		expectedStatus int
+		expectedBody   map[string]interface{}
+	}{
+		{
+			name:     "Success - Trigger backup",
+			backupID: "123e4567-e89b-12d3-a456-426614174000",
+			mockSetup: func() {
+				backupID, _ := uuid.Parse("123e4567-e89b-12d3-a456-426614174000")
+				mockExecutionsService.On("RunExecution", mock.Anything, backupID).Return(nil)
+			},
+			expectedStatus: http.StatusOK,
+			expectedBody: map[string]interface{}{
+				"message": "Backup task triggered successfully",
+			},
+		},
+		{
+			name:           "Error - Invalid backup ID",
+			backupID:       "invalid",
+			mockSetup:      func() {},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody: map[string]interface{}{
+				"error": "Invalid backup ID",
+			},
+		},
+		{
+			name:     "Error - Run execution fails",
+			backupID: "123e4567-e89b-12d3-a456-426614174000",
+			mockSetup: func() {
+				backupID, _ := uuid.Parse("123e4567-e89b-12d3-a456-426614174000")
+				mockExecutionsService.On("RunExecution", mock.Anything, backupID).Return(assert.AnError)
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectedBody: map[string]interface{}{
+				"error": "Failed to trigger backup: " + assert.AnError.Error(),
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Setup mock
+			tc.mockSetup()
+
+			// Create request
+			req := httptest.NewRequest(http.MethodPost, "/api/backups/"+tc.backupID+"/trigger", nil)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+			c.SetParamNames("id")
+			c.SetParamValues(tc.backupID)
+
+			// Test handler
+			err := h.triggerBackupHandler(c)
+
+			// Assertions
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expectedStatus, rec.Code)
+
+			var response map[string]interface{}
+			err = json.Unmarshal(rec.Body.Bytes(), &response)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expectedBody, response)
+
+			// Reset mock for next test
+			mockExecutionsService.ExpectedCalls = nil
+		})
+	}
 }

@@ -168,3 +168,37 @@ func (h *handlers) createBackupHandler(c echo.Context) error {
 
 	return c.JSON(http.StatusCreated, backup)
 }
+
+// TriggerBackup godoc
+// @Summary Trigger a backup task
+// @Description Trigger a backup task to run immediately
+// @Tags backups
+// @Accept json
+// @Produce json
+// @Param id path string true "Backup ID"
+// @Success 200 {object} map[string]string
+// @Router /api/backups/{id}/trigger [post]
+func (h *handlers) triggerBackupHandler(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	// Get backup ID from URL parameter
+	backupIDStr := c.Param("id")
+	backupID, err := uuid.Parse(backupIDStr)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "Invalid backup ID",
+		})
+	}
+
+	// Trigger the backup
+	err = h.servs.ExecutionsService.RunExecution(ctx, backupID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to trigger backup: " + err.Error(),
+		})
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{
+		"message": "Backup task triggered successfully",
+	})
+}

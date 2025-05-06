@@ -12,4 +12,5 @@ func MountRouter(parent *echo.Group, servs *service.Service) {
 	parent.GET("/:id", h.getBackupHandler)
 	parent.POST("", h.createBackupHandler)
 	parent.DELETE("/:id", h.deleteBackupHandler)
+	parent.POST("/:id/trigger", h.triggerBackupHandler)
 }
