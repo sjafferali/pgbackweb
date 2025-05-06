@@ -28,4 +28,10 @@ func MountRouter(
 	protected.GET("/databases", h.listDatabasesAPI)
 	protected.GET("/databases/:id", h.getDatabaseAPI)
 	protected.DELETE("/databases/:id", h.deleteDatabaseAPI)
+
+	// Webhook endpoints
+	protected.POST("/webhooks", h.createWebhookAPI)
+	protected.GET("/webhooks", h.listWebhooksAPI)
+	protected.GET("/webhooks/:id", h.getWebhookAPI)
+	protected.DELETE("/webhooks/:id", h.deleteWebhookAPI)
 }
