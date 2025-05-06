@@ -23,4 +23,4 @@ func APIKeyAuth() echo.MiddlewareFunc {
 			return next(c)
 		}
 	}
-} 
+}

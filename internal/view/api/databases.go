@@ -64,4 +64,4 @@ func (h *handlers) createDatabaseAPI(c echo.Context) error {
 		Version:   db.PgVersion,
 		CreatedAt: db.CreatedAt.String(),
 	})
-} 
+}
