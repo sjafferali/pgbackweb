@@ -5,6 +5,7 @@ import (
 
 	"github.com/eduardolat/pgbackweb/internal/database/dbgen"
 	"github.com/eduardolat/pgbackweb/internal/validate"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
 
@@ -64,4 +65,33 @@ func (h *handlers) createDatabaseAPI(c echo.Context) error {
 		Version:   db.PgVersion,
 		CreatedAt: db.CreatedAt.String(),
 	})
+}
+
+func (h *handlers) deleteDatabaseAPI(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	// Get database ID from URL parameter
+	dbIDStr := c.Param("id")
+	dbID, err := uuid.Parse(dbIDStr)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "Invalid database ID",
+		})
+	}
+
+	// Delete the database
+	err = h.servs.DatabasesService.DeleteDatabase(ctx, dbID)
+	if err != nil {
+		// Check if the error is due to database not found
+		if err.Error() == "database not found" {
+			return c.JSON(http.StatusNotFound, map[string]string{
+				"error": "Database not found",
+			})
+		}
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to delete database: " + err.Error(),
+		})
+	}
+
+	return c.NoContent(http.StatusNoContent)
 }

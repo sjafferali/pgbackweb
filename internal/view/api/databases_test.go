@@ -22,6 +22,7 @@ import (
 type DatabasesServiceInterface interface {
 	TestDatabase(ctx context.Context, version, connString string) error
 	CreateDatabase(ctx context.Context, params dbgen.DatabasesServiceCreateDatabaseParams) (dbgen.Database, error)
+	DeleteDatabase(ctx context.Context, id uuid.UUID) error
 }
 
 // MockDatabasesService is a mock implementation of the DatabasesServiceInterface
@@ -37,6 +38,11 @@ func (m *MockDatabasesService) TestDatabase(ctx context.Context, version, connSt
 func (m *MockDatabasesService) CreateDatabase(ctx context.Context, params dbgen.DatabasesServiceCreateDatabaseParams) (dbgen.Database, error) {
 	args := m.Called(ctx, params)
 	return args.Get(0).(dbgen.Database), args.Error(1)
+}
+
+func (m *MockDatabasesService) DeleteDatabase(ctx context.Context, id uuid.UUID) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
 }
 
 // mockHandlers is a test version of handlers that accepts interfaces
@@ -93,6 +99,36 @@ func (h *mockHandlers) createDatabaseAPI(c echo.Context) error {
 		Version:   db.PgVersion,
 		CreatedAt: db.CreatedAt.String(),
 	})
+}
+
+// deleteDatabaseAPI is a copy of the original handler but using our mock types
+func (h *mockHandlers) deleteDatabaseAPI(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	// Get database ID from URL parameter
+	dbIDStr := c.Param("id")
+	dbID, err := uuid.Parse(dbIDStr)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "Invalid database ID",
+		})
+	}
+
+	// Delete the database
+	err = h.servs.DatabasesService.DeleteDatabase(ctx, dbID)
+	if err != nil {
+		// Check if the error is due to database not found
+		if err.Error() == "database not found" {
+			return c.JSON(http.StatusNotFound, map[string]string{
+				"error": "Database not found",
+			})
+		}
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to delete database: " + err.Error(),
+		})
+	}
+
+	return c.NoContent(http.StatusNoContent)
 }
 
 func TestCreateDatabaseAPI(t *testing.T) {
@@ -244,6 +280,132 @@ func TestCreateDatabaseAPI(t *testing.T) {
 			if tt.expectedStatus == http.StatusCreated {
 				assert.NotEmpty(t, response["id"])
 				assert.NotEmpty(t, response["created_at"])
+			}
+
+			// Reset mock for next test
+			mockDBService.ExpectedCalls = nil
+		})
+	}
+}
+
+func TestDeleteDatabaseAPI(t *testing.T) {
+	// Setup
+	e := echo.New()
+	mockDBService := &MockDatabasesService{}
+
+	// Create a mock service with our mock DatabasesService
+	servs := &mockService{
+		DatabasesService: mockDBService,
+	}
+
+	// Create a handler with our mock service
+	h := &mockHandlers{
+		servs: servs,
+	}
+
+	// Set test API key
+	os.Setenv("API_KEY", "test-api-key")
+	defer os.Unsetenv("API_KEY")
+
+	tests := []struct {
+		name           string
+		apiKey         string
+		dbID           string
+		mockSetup      func()
+		expectedStatus int
+		expectedBody   map[string]interface{}
+	}{
+		{
+			name:   "successful database deletion",
+			apiKey: "test-api-key",
+			dbID:   uuid.New().String(),
+			mockSetup: func() {
+				mockDBService.On("DeleteDatabase", mock.Anything, mock.AnythingOfType("uuid.UUID")).Return(nil)
+			},
+			expectedStatus: http.StatusNoContent,
+			expectedBody:   nil,
+		},
+		{
+			name:           "missing API key",
+			apiKey:         "",
+			dbID:           uuid.New().String(),
+			mockSetup:      func() {},
+			expectedStatus: http.StatusUnauthorized,
+			expectedBody: map[string]interface{}{
+				"error": "Invalid or missing API key",
+			},
+		},
+		{
+			name:           "invalid API key",
+			apiKey:         "wrong-key",
+			dbID:           uuid.New().String(),
+			mockSetup:      func() {},
+			expectedStatus: http.StatusUnauthorized,
+			expectedBody: map[string]interface{}{
+				"error": "Invalid or missing API key",
+			},
+		},
+		{
+			name:           "invalid database ID",
+			apiKey:         "test-api-key",
+			dbID:           "invalid-uuid",
+			mockSetup:      func() {},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody: map[string]interface{}{
+				"error": "Invalid database ID",
+			},
+		},
+		{
+			name:   "database not found",
+			apiKey: "test-api-key",
+			dbID:   uuid.New().String(),
+			mockSetup: func() {
+				mockDBService.On("DeleteDatabase", mock.Anything, mock.AnythingOfType("uuid.UUID")).Return(
+					assert.AnError,
+				)
+			},
+			expectedStatus: http.StatusInternalServerError,
+			expectedBody: map[string]interface{}{
+				"error": "Failed to delete database: " + assert.AnError.Error(),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Setup mock
+			tt.mockSetup()
+
+			// Create request
+			req := httptest.NewRequest(http.MethodDelete, "/api/v1/databases/"+tt.dbID, nil)
+			if tt.apiKey != "" {
+				req.Header.Set("X-API-Key", tt.apiKey)
+			}
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+			c.SetPath("/api/v1/databases/:id")
+			c.SetParamNames("id")
+			c.SetParamValues(tt.dbID)
+
+			// Test with middleware
+			handler := APIKeyAuth()(h.deleteDatabaseAPI)
+			err := handler(c)
+
+			// Assertions
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedStatus, rec.Code)
+
+			if tt.expectedBody != nil {
+				var response map[string]interface{}
+				err = json.Unmarshal(rec.Body.Bytes(), &response)
+				assert.NoError(t, err)
+
+				// Check expected fields
+				for key, expectedValue := range tt.expectedBody {
+					assert.Equal(t, expectedValue, response[key])
+				}
+			} else {
+				assert.Empty(t, rec.Body.String())
 			}
 
 			// Reset mock for next test
