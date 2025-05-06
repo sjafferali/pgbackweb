@@ -9,6 +9,7 @@ import (
 )
 
 //go:embed swagger-ui/*
+
 var swaggerUI embed.FS
 
 //go:embed swagger.json
@@ -21,7 +22,7 @@ func RegisterSwaggerUI(parent *echo.Group) {
 	if err != nil {
 		panic(err)
 	}
-	parent.StaticFS("/swagger-ui", echo.MustSubFS(swaggerUIFS, "swagger-ui"))
+	parent.StaticFS("/swagger-ui", echo.MustSubFS(swaggerUIFS, ""))
 
 	// Serve Swagger spec
 	parent.GET("/swagger.json", func(c echo.Context) error {
@@ -30,6 +31,6 @@ func RegisterSwaggerUI(parent *echo.Group) {
 
 	// Serve Swagger UI index
 	parent.GET("/docs", func(c echo.Context) error {
-		return c.Redirect(http.StatusMovedPermanently, "/api/swagger-ui/index.html")
+		return c.Redirect(http.StatusMovedPermanently, "swagger-ui/index.html")
 	})
 }
