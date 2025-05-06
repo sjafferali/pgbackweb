@@ -228,6 +228,45 @@
             "enum": ["ok"]
           }
         }
+      },
+      "Restoration": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "execution_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "database_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["running", "success", "failed"]
+          },
+          "message": {
+            "type": "string"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finished_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "execution_backup_name": {
+            "type": "string"
+          },
+          "database_name": {
+            "type": "string"
+          }
+        }
       }
     }
   },
@@ -252,6 +291,10 @@
     {
       "name": "executions",
       "description": "Backup execution operations"
+    },
+    {
+      "name": "restorations",
+      "description": "Restoration management operations"
     }
   ],
   "paths": {
@@ -683,6 +726,75 @@
           },
           "400": {
             "description": "Invalid backup ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/restorations": {
+      "get": {
+        "summary": "List all restorations",
+        "description": "Get a list of all restorations with optional filtering by execution ID or database ID",
+        "tags": ["restorations"],
+        "parameters": [
+          {
+            "name": "execution_id",
+            "in": "query",
+            "description": "Filter by execution ID",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "database_id",
+            "in": "query",
+            "description": "Filter by database ID",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Restoration"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid ID format",
             "content": {
               "application/json": {
                 "schema": {
