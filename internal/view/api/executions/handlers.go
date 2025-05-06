@@ -19,12 +19,14 @@ func newHandlers(servs *service.Service) *handlers {
 
 // ListExecutions godoc
 // @Summary List all executions
-// @Description Get a list of all executions with optional filtering
+// @Description Get a paginated list of all executions with optional filtering by backup ID
 // @Tags executions
 // @Accept json
 // @Produce json
-// @Param backup_id query string false "Filter by backup ID"
-// @Success 200 {object} map[string]interface{}
+// @Param backup_id query string false "Filter by backup ID (UUID)"
+// @Success 200 {object} map[string]interface{} "Returns a paginated list of executions"
+// @Failure 400 {object} map[string]string "Invalid backup ID"
+// @Failure 500 {object} map[string]string "Internal server error"
 // @Router /api/executions [get]
 func (h *handlers) listExecutionsHandler(c echo.Context) error {
 	ctx := c.Request().Context()

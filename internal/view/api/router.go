@@ -14,6 +14,9 @@ type handlers struct {
 func MountRouter(
 	parent *echo.Group, mids *middleware.Middleware, servs *service.Service,
 ) {
+	// Mount Swagger UI
+	RegisterSwaggerUI(parent)
+
 	v1 := parent.Group("/v1")
 
 	h := &handlers{
