@@ -344,6 +344,22 @@
               }
             }
           },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Invalid or missing API key"
+                    }
+                  }
+                }
+              }
+            }
+          },
           "400": {
             "description": "Invalid request",
             "content": {
@@ -379,6 +395,22 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/Database"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Invalid or missing API key"
+                    }
                   }
                 }
               }
@@ -425,6 +457,22 @@
               }
             }
           },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Invalid or missing API key"
+                    }
+                  }
+                }
+              }
+            }
+          },
           "404": {
             "description": "Database not found",
             "content": {
@@ -466,6 +514,22 @@
         "responses": {
           "204": {
             "description": "Database deleted successfully"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Invalid or missing API key"
+                    }
+                  }
+                }
+              }
+            }
           },
           "404": {
             "description": "Database not found",
@@ -516,6 +580,22 @@
               }
             }
           },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Invalid or missing API key"
+                    }
+                  }
+                }
+              }
+            }
+          },
           "400": {
             "description": "Invalid request",
             "content": {
@@ -551,6 +631,22 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/Webhook"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Invalid or missing API key"
+                    }
                   }
                 }
               }
@@ -597,6 +693,22 @@
               }
             }
           },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Invalid or missing API key"
+                    }
+                  }
+                }
+              }
+            }
+          },
           "404": {
             "description": "Webhook not found",
             "content": {
@@ -638,6 +750,22 @@
         "responses": {
           "204": {
             "description": "Webhook deleted successfully"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Invalid or missing API key"
+                    }
+                  }
+                }
+              }
+            }
           },
           "404": {
             "description": "Webhook not found",
@@ -724,6 +852,22 @@
               }
             }
           },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Invalid or missing API key"
+                    }
+                  }
+                }
+              }
+            }
+          },
           "400": {
             "description": "Invalid backup ID",
             "content": {
@@ -787,6 +931,22 @@
                       "items": {
                         "$ref": "#/components/schemas/Restoration"
                       }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Invalid or missing API key"
                     }
                   }
                 }
